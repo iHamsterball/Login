@@ -13,6 +13,7 @@ public:
 		CStringA &ip, //ip
 		CStringA &action //action
 		);
+	inline void Empty(){ Account = ""; Password = ""; }
 
 	//数据
 	CStringA Account;//账号
@@ -37,7 +38,7 @@ public:
 	//用于sort函数的<运算符重载
 	bool operator < (const LoginNetConnect &a)const
 	{
-		return FreeDataBalance < a.FreeDataBalance ||
-			(FreeDataBalance == a.FreeDataBalance && BasicDataBalance < a.BasicDataBalance);
+		return FreeDataBalance > a.FreeDataBalance ||
+			(FreeDataBalance == a.FreeDataBalance && BasicDataBalance > a.BasicDataBalance);
 	}
 };

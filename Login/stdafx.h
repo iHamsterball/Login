@@ -39,7 +39,7 @@
 #include <afxsock.h>            // MFC 套接字扩展
 
 
-
+#include <vector>               // vector变长数组
 
 
 #ifdef _UNICODE

@@ -18,12 +18,14 @@ void LoginNetConnect::OnBjfuLogin(
 	CString ServerName = _T("202.204.122.1");
 	INTERNET_PORT nPort = 80;  //port
 
-	CStringA data = "username=" + username + "&password=" + password + "&ip=" + ip + "&action=" + action;
+	CStringA temp = "username=" + username + "&password=" + password + "&ip=" + ip + "&action=" + action;
 
 	pServer = session.GetHttpConnection(ServerName, nPort);
-	pf = pServer->OpenRequest(CHttpConnection::HTTP_VERB_POST, _T("/checkLogin.jsp"));
-	pf->SendRequestEx(data.GetLength());
-	pf->WriteString((LPCTSTR)data.GetBuffer());
+	pf = pServer->OpenRequest(CHttpConnection::HTTP_VERB_GET, _T("/"));
+	//pf->SendRequestEx(data.GetLength());
+	//pf->WriteString((LPCTSTR)data.GetBuffer());
+	pf->SendRequestEx(temp.GetLength());
+	pf->WriteString((LPCTSTR)temp.GetBuffer());
 	pf->EndRequest();
 
 
@@ -33,6 +35,17 @@ void LoginNetConnect::OnBjfuLogin(
 		cache += str;
 	}
 	//MessageBox(cache, _T("网页信息"), 0);
+	
+	//读取IP地址
+	{
+		int start, end;
+		start = cache.Find(_T("name=\"ip\""));
+		cache = cache.Right(cache.GetLength() - start - 10);
+		start = cache.Find(_T("\""));
+		end = cache.Find(_T("\">"));
+		ip = cache.Mid(start + 1, end - start - 1);
+	}
+
 	if (pf != NULL)
 	{
 		pf->Close();
@@ -46,7 +59,9 @@ void LoginNetConnect::OnBjfuLogin(
 	session.GetCookie(_T("http://202.204.122.1/checkLogin.jsp"), _T("JSESSIONID"), CookieData);
 	int tmp = GetLastError();
 	session.SetCookie(_T("http://202.204.122.1"), _T(""), CookieData);
-
+	
+	//获取IP地址后才能构造提交数据
+	CStringA data = "username=" + username + "&password=" + password + "&ip=" + ip + "&action=" + action;
 
 	//拼接头部
 	pf = pServer->OpenRequest(CHttpConnection::HTTP_VERB_POST, _T("/checkLogin.jsp"));

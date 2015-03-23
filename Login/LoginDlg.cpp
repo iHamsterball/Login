@@ -50,7 +50,9 @@ END_MESSAGE_MAP()
 // CLoginDlg 对话框
 
 //全局数据
-LoginNetConnect Connection[6];//网络连接数据
+//LoginNetConnect Connection[6];//网络连接数据
+std::vector<LoginNetConnect> vec;
+std::vector<LoginNetConnect>::iterator cur;
 
 CLoginDlg::CLoginDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CLoginDlg::IDD, pParent)
@@ -122,22 +124,76 @@ BOOL CLoginDlg::OnInitDialog()
 	List.InsertColumn(0, _T("#"), LVCFMT_LEFT, 80);
 	List.InsertColumn(1, _T("连接状态"), LVCFMT_CENTER, 60);
 	List.InsertColumn(2, _T("账户余额"), LVCFMT_CENTER, 70);
-	List.InsertColumn(3, _T("已使用流量"), LVCFMT_CENTER, 80);
-	List.InsertColumn(4, _T("剩余免费流量"), LVCFMT_CENTER, 100);
-	List.InsertColumn(5, _T("剩余基础流量"), LVCFMT_CENTER, 100);
-	List.InsertColumn(6, _T("超出基础流量"), LVCFMT_CENTER, 100);
-	List.InsertColumn(7, _T("超流量费用"), LVCFMT_CENTER, 80);
+	List.InsertColumn(3, _T("剩余免费流量"), LVCFMT_CENTER, 100);
+	List.InsertColumn(4, _T("剩余基础流量"), LVCFMT_CENTER, 100);
+	List.InsertColumn(5, _T("超出基础流量"), LVCFMT_CENTER, 100);
+	List.InsertColumn(6, _T("超流量费用"), LVCFMT_CENTER, 80);
+	List.InsertColumn(7, _T("已使用流量"), LVCFMT_CENTER, 80);
 	List.InsertColumn(8, _T("套餐类型"), LVCFMT_CENTER, 80);
 	//List.InsertColumn(4, _T("进度"), LVCFMT_CENTER, 150);
 
+	//读取账号信息
+	wchar_t buffer[2000];
+	GetPrivateProfileSection(_T("info"), buffer, 2000, _T("./Config.ini"));
+	//MessageBox(buffer, _T("info"), 0);
+	CString username, password;
+	LoginNetConnect account;
+	int p;
+	p = 0;
+	int state = 1;//reading username
+	while (true)
+	{
+		if (state == 1)
+			account.Account.AppendChar(buffer[p]);
+		else if (state == 2)
+			account.Password.AppendChar(buffer[p]);
+		else
+			break;
+
+		p++;
+		if (buffer[p] == '=')
+		{
+			state = 2;
+			p++;
+		}
+		else if (buffer[p] == '\0')
+		{
+			if (buffer[p + 1] == '\0')
+			{
+				state = 0;
+				vec.push_back(account);
+			}
+			else
+			{
+				p++;
+				state = 1;
+				vec.push_back(account);
+				account.Empty();
+			}
+		}
+	}
+
 	//初始化列表内容
 	OnRefresh();
-	std::sort(Connection, Connection + 6);
-	Connection[0].BasicDataBalance;
-	for (int i = 0; i <= 4; i++)//未来将会使用vector变长数组代替
-		if (Connection[i].ConnectStatus == _T("用户已在本主机上登录，不需要重新登录"))
-			Connection[i].OnBjfuLogin(Connection[i].Account, Connection[i].Password, (CStringA)"118.228.171.91", (CStringA)"disconnect");
-	Connection[5].OnBjfuLogin(Connection[5].Account, Connection[5].Password, (CStringA)"118.228.171.91", (CStringA)"connect");
+	std::sort(vec.begin(), vec.end());
+	for (cur = vec.begin(); cur != vec.end();cur++)//未来将会使用vector变长数组代替
+		if ((*cur).ConnectStatus == _T("用户已在本主机上登录，不需要重新登录")
+			|| (*cur).ConnectStatus == _T("联网成功"))
+		{
+			(*cur).OnBjfuLogin((*cur).Account, (*cur).Password, (CStringA)"118.228.171.91", (CStringA)"disconnect");
+			break;
+		}
+	//需要考虑网络连接数已满的情况
+	for (cur = vec.begin(); cur != vec.end(); cur++)
+	{
+		if ((*cur).BasicDataBalance > 0)
+			(*cur).OnBjfuLogin((*cur).Account, (*cur).Password, (CStringA)"118.228.171.91", (CStringA)"connect");
+		if (!((*cur).ConnectStatus == _T("用户已在本主机上登录，不需要重新登录")
+			|| (*cur).ConnectStatus == _T("联网成功")))
+			continue;
+		else
+			break;
+	}
 	OnRefresh();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -195,48 +251,49 @@ HCURSOR CLoginDlg::OnQueryDragIcon()
 void CLoginDlg::OnRefresh()
 {
 	// 登陆网络
-	CStringA username[6] = { "131114203", "131114205", "131114206", "131114207", "131114209", "131114215" };
-	CStringA password[6] = { "5168079", "52222919", "41133018", "1124Cother", "cxzwlan", "bhx20140501" };
-	CStringA ip, action;
-	ip = _T("118.228.171.91");
+	
+	//CStringA username[6] = { "131114203", "131114205", "131114206", "131114207", "131114209", "131114215" };
+	//CStringA password[6] = { "5168079", "52222919", "41133018", "1124Cother", "cxzwlan", "bhx20140501" };
+	CStringA ip;//在当前版本中，不需要手动指定IP地址，程序会自动获取当前连接网络的IP地址
+	CStringA action;
 	action = _T("admin");
 	List.DeleteAllItems();
-	for (int i = 5; i >= 0; i--)
+	for (cur = vec.begin(); cur != vec.end();cur++)
 	{
-		int tmp = List.InsertItem(0, (CString)username[i]);
-		Connection[i].OnBjfuLogin(username[i], password[i], ip, action);
+		int tmp = List.InsertItem(0, (CString)(*cur).Account);
+		(*cur).OnBjfuLogin((*cur).Account, (*cur).Password, ip, action);
 
 		CString TempStr;
 
-		if (Connection[i].ConnectStatus == _T("用户已在本主机上登录，不需要重新登录")
-			||Connection[i].ConnectStatus==_T("联网成功"))
+		if ((*cur).ConnectStatus == _T("用户已在本主机上登录，不需要重新登录")
+			||(*cur).ConnectStatus==_T("联网成功"))
 				TempStr = _T("√");
-		else if (Connection[i].ConnectStatus == _T("对不起，您的用户状态不正确，您现在的状态是：[欠费]，请与管理员联系！"))
+		else if ((*cur).ConnectStatus == _T("对不起，您的用户状态不正确，您现在的状态是：[欠费]，请与管理员联系！"))
 			TempStr = _T("×");
 		else
 			TempStr = _T("");
 		List.SetItemText(tmp, 1, TempStr);
 
-		TempStr.Format(_T("%.3lf"), Connection[i].AccountBalance);
+		TempStr.Format(_T("%.3lf"), (*cur).AccountBalance);
 		TempStr.AppendFormat(_T("元"));
 		List.SetItemText(tmp, 2, TempStr);
-		TempStr.Format(_T("%.3lf"), Connection[i].DataUsage);
+		TempStr.Format(_T("%.3lf"), (*cur).FreeDataBalance);
 		TempStr.AppendFormat(_T("GB"));
 		List.SetItemText(tmp, 3, TempStr);
-		TempStr.Format(_T("%.3lf"), Connection[i].FreeDataBalance);
+		TempStr.Format(_T("%.3lf"), (*cur).BasicDataBalance);
 		TempStr.AppendFormat(_T("GB"));
 		List.SetItemText(tmp, 4, TempStr);
-		TempStr.Format(_T("%.3lf"), Connection[i].BasicDataBalance);
+		TempStr.Format(_T("%.3lf"), (*cur).BasicDataExceed);
 		TempStr.AppendFormat(_T("GB"));
 		List.SetItemText(tmp, 5, TempStr);
-		TempStr.Format(_T("%.3lf"), Connection[i].BasicDataExceed);
-		TempStr.AppendFormat(_T("GB"));
-		List.SetItemText(tmp, 6, TempStr);
-		TempStr.Format(_T("%.3lf"), Connection[i].ExceedDataFee);
+		TempStr.Format(_T("%.3lf"), (*cur).ExceedDataFee);
 		TempStr.AppendFormat(_T("元"));
+		List.SetItemText(tmp, 6, TempStr);
+		TempStr.Format(_T("%.3lf"), (*cur).DataUsage);
+		TempStr.AppendFormat(_T("GB"));
 		List.SetItemText(tmp, 7, TempStr);
 
-		TempStr.Format(_T("%.0lf"), Connection[i].BasicDataTotal);
+		TempStr.Format(_T("%.0lf"), (*cur).BasicDataTotal);
 		TempStr.AppendFormat(_T("GB"));
 		List.SetItemText(tmp, 8, TempStr);
 	}
