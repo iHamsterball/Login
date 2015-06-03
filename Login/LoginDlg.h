@@ -35,5 +35,8 @@ public:
 	CListCtrl List;
 	afx_msg void OnAbout();
 
+	afx_msg void OnMenuAbout();
+	afx_msg void OnMenuRefresh();
+	afx_msg void OnMenuExit();
 };
 

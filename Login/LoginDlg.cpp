@@ -73,6 +73,9 @@ BEGIN_MESSAGE_MAP(CLoginDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON1, &CLoginDlg::OnRefresh)
 	ON_BN_CLICKED(IDC_BUTTON2, &CLoginDlg::OnAbout)
+	ON_COMMAND(ID_32774, &CLoginDlg::OnMenuAbout)
+	ON_COMMAND(ID_32771, &CLoginDlg::OnMenuRefresh)
+	ON_COMMAND(ID_32772, &CLoginDlg::OnMenuExit)
 END_MESSAGE_MAP()
 
 
@@ -251,14 +254,11 @@ HCURSOR CLoginDlg::OnQueryDragIcon()
 void CLoginDlg::OnRefresh()
 {
 	// 登陆网络
-	
-	//CStringA username[6] = { "131114203", "131114205", "131114206", "131114207", "131114209", "131114215" };
-	//CStringA password[6] = { "5168079", "52222919", "41133018", "1124Cother", "cxzwlan", "bhx20140501" };
 	CStringA ip;//在当前版本中，不需要手动指定IP地址，程序会自动获取当前连接网络的IP地址
 	CStringA action;
 	action = _T("admin");
 	List.DeleteAllItems();
-	for (cur = vec.begin(); cur != vec.end();cur++)
+	for (cur = vec.begin(); cur != vec.end(); cur++)
 	{
 		int tmp = List.InsertItem(0, (CString)(*cur).Account);
 		(*cur).OnBjfuLogin((*cur).Account, (*cur).Password, ip, action);
@@ -266,36 +266,47 @@ void CLoginDlg::OnRefresh()
 		CString TempStr;
 
 		if ((*cur).ConnectStatus == _T("用户已在本主机上登录，不需要重新登录")
-			||(*cur).ConnectStatus==_T("联网成功"))
-				TempStr = _T("√");
+			|| (*cur).ConnectStatus == _T("联网成功"))
+			TempStr = _T("√");
 		else if ((*cur).ConnectStatus == _T("对不起，您的用户状态不正确，您现在的状态是：[欠费]，请与管理员联系！"))
 			TempStr = _T("×");
+		else if ((*cur).ConnectStatus == _T("密码错误"))
+			TempStr = _T("Error[1]");
 		else
 			TempStr = _T("");
 		List.SetItemText(tmp, 1, TempStr);
 
-		TempStr.Format(_T("%.3lf"), (*cur).AccountBalance);
-		TempStr.AppendFormat(_T("元"));
-		List.SetItemText(tmp, 2, TempStr);
-		TempStr.Format(_T("%.3lf"), (*cur).FreeDataBalance);
-		TempStr.AppendFormat(_T("GB"));
-		List.SetItemText(tmp, 3, TempStr);
-		TempStr.Format(_T("%.3lf"), (*cur).BasicDataBalance);
-		TempStr.AppendFormat(_T("GB"));
-		List.SetItemText(tmp, 4, TempStr);
-		TempStr.Format(_T("%.3lf"), (*cur).BasicDataExceed);
-		TempStr.AppendFormat(_T("GB"));
-		List.SetItemText(tmp, 5, TempStr);
-		TempStr.Format(_T("%.3lf"), (*cur).ExceedDataFee);
-		TempStr.AppendFormat(_T("元"));
-		List.SetItemText(tmp, 6, TempStr);
-		TempStr.Format(_T("%.3lf"), (*cur).DataUsage);
-		TempStr.AppendFormat(_T("GB"));
-		List.SetItemText(tmp, 7, TempStr);
+		if (TempStr != _T("Error[1]"))
+		{
+			TempStr.Format(_T("%.3lf"), (*cur).AccountBalance);
+			TempStr.AppendFormat(_T("元"));
+			List.SetItemText(tmp, 2, TempStr);
+			TempStr.Format(_T("%.3lf"), (*cur).FreeDataBalance);
+			TempStr.AppendFormat(_T("GB"));
+			List.SetItemText(tmp, 3, TempStr);
+			TempStr.Format(_T("%.3lf"), (*cur).BasicDataBalance);
+			TempStr.AppendFormat(_T("GB"));
+			List.SetItemText(tmp, 4, TempStr);
+			TempStr.Format(_T("%.3lf"), (*cur).BasicDataExceed);
+			TempStr.AppendFormat(_T("GB"));
+			List.SetItemText(tmp, 5, TempStr);
+			TempStr.Format(_T("%.3lf"), (*cur).ExceedDataFee);
+			TempStr.AppendFormat(_T("元"));
+			List.SetItemText(tmp, 6, TempStr);
+			TempStr.Format(_T("%.3lf"), (*cur).DataUsage);
+			TempStr.AppendFormat(_T("GB"));
+			List.SetItemText(tmp, 7, TempStr);
 
-		TempStr.Format(_T("%.0lf"), (*cur).BasicDataTotal);
-		TempStr.AppendFormat(_T("GB"));
-		List.SetItemText(tmp, 8, TempStr);
+			TempStr.Format(_T("%.0lf"), (*cur).BasicDataTotal);
+			TempStr.AppendFormat(_T("GB"));
+			List.SetItemText(tmp, 8, TempStr);
+		}
+		else
+		{
+			TempStr = _T("-");
+			for (int i = 2; i <= 8;i++)
+				List.SetItemText(tmp, i, TempStr);
+		}
 	}
 
 }
@@ -307,4 +318,20 @@ void CLoginDlg::OnAbout()
 	// TODO:  在此添加控件通知处理程序代码
 	CAboutDlg Dlg;
 	Dlg.DoModal();
+}
+
+
+//菜单的执行代码
+void CLoginDlg::OnMenuAbout()
+{
+	CAboutDlg Dlg;
+	Dlg.DoModal();
+}
+void CLoginDlg::OnMenuRefresh()
+{
+	OnRefresh();
+}
+void CLoginDlg::OnMenuExit()
+{
+	OnOK();
 }

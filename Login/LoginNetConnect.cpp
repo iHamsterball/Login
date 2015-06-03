@@ -98,8 +98,26 @@ void LoginNetConnect::OnBjfuLogin(
 	{
 		cache += str;
 	}
-	//MessageBox(cache, _T("网页信息"), 0);
+	//MessageBox(NULL, cache, _T("网页信息"), 0);
+	if (cache.Find(_T("用户名或密码不正确")) != -1)
+	{
+		ConnectStatus = _T("密码错误");
+		if (pf != NULL)
+		{
+			pf->Close();
+			delete pf;
+			pf = NULL;
+		}
+		if (pServer != NULL)
+		{
+			pServer->Close();
+			delete pServer;
+			pServer = NULL;
+		}
+		session.Close();
 
+		return;
+	}
 	if (pf != NULL)
 	{
 		pf->Close();
