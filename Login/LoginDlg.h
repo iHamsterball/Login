@@ -31,7 +31,7 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-	void OnCheckUpdate();
+	void OnCheckUpdate(int option);
 	afx_msg void OnRefresh();
 	CListCtrl List;
 	afx_msg void OnAbout();

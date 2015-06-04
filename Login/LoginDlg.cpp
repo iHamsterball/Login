@@ -272,6 +272,9 @@ BOOL CLoginDlg::OnInitDialog()
 	}
 	OnRefresh();
 
+	//检查更新
+	OnCheckUpdate(0);//参数0代表如果未检查到更新不弹框提示
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -385,7 +388,7 @@ void CLoginDlg::OnRefresh()
 }
 
 
-void CLoginDlg::OnCheckUpdate()
+void CLoginDlg::OnCheckUpdate(int option)
 {
 	//获取当前文件的版本信息
 	CAboutDlg Dlg;
@@ -414,7 +417,7 @@ void CLoginDlg::OnCheckUpdate()
 	CString latestbuild = cache.Mid(pos + 1, cache.GetLength() - pos - 2);
 
 	//如果检查到新版本
-	if (latestVer != mainVer || latestVer == mainVer&&build < latestbuild)
+	if (latestVer > mainVer || latestVer == mainVer&&build < latestbuild)
 	{
 		//弹出消息框并获取用户操作
 		int ret;
@@ -430,6 +433,9 @@ void CLoginDlg::OnCheckUpdate()
 			break;
 		}
 	}
+	else
+		if (option)//软件启动时的检查不应弹出此对话框 -- 手动点击检查更新按钮需要弹出
+			MessageBox(_T("暂未发现更新"), _T("提示"), MB_OK | MB_ICONASTERISK);
 }
 
 
@@ -461,7 +467,7 @@ void CLoginDlg::OnOnlineSupport()
 }
 void CLoginDlg::OnMenuCheckUpdate()
 {
-	OnCheckUpdate();
+	OnCheckUpdate(1);
 }
 void CLoginDlg::OnUpdateHistory()
 {
