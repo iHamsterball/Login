@@ -9,7 +9,7 @@
 #include "LoginNetConnect.h"
 #include "afxdialogex.h"
 #include <algorithm>
-
+#pragma comment(lib, "version.lib")
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -31,6 +31,9 @@ public:
 // 实现
 protected:
 	DECLARE_MESSAGE_MAP()
+public:
+	virtual BOOL OnInitDialog();
+	CString GetAppVersion(WCHAR* AppName);
 };
 
 CAboutDlg::CAboutDlg() : CDialogEx(CAboutDlg::IDD)
@@ -42,7 +45,74 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 }
+CString CAboutDlg::GetAppVersion(WCHAR* AppName)
+{
+	CString   AppVersion;
 
+	DWORD   RessourceVersionInfoSize;
+	DWORD   JustAJunkVariabel;
+	WCHAR*   VersionInfoPtr;
+	struct   LANGANDCODEPAGE
+	{
+		WORD   wLanguage;
+		WORD   wCodePage;
+	}   *TranslationPtr;
+	WCHAR*     InformationPtr;
+	UINT      VersionInfoSize;
+	WCHAR     VersionValue[255];
+
+	RessourceVersionInfoSize = GetFileVersionInfoSize(AppName, &JustAJunkVariabel);
+	if (0 != RessourceVersionInfoSize)
+	{
+		VersionInfoPtr = new WCHAR[RessourceVersionInfoSize];
+		if (!GetFileVersionInfo(AppName, 0, RessourceVersionInfoSize, VersionInfoPtr))
+		{
+			//ErrorExit((LPTSTR)L"GetFileVersionInfo");
+			delete[]   VersionInfoPtr;
+			return NULL;
+		}
+
+		if (!VerQueryValue(VersionInfoPtr, L"VarFileInfo\\Translation", (LPVOID*)&TranslationPtr, &VersionInfoSize))
+		{
+			//ErrorExit((LPTSTR)L"VerQueryValue");
+			delete[]   VersionInfoPtr;
+			return NULL;
+		}
+
+		// retrieve product version
+		wsprintf(VersionValue, L"\\StringFileInfo\\%04x%04x\\ProductVersion", TranslationPtr[0].wLanguage, TranslationPtr[0].wCodePage);
+
+		if (!VerQueryValue(VersionInfoPtr, VersionValue, (LPVOID*)&InformationPtr, &VersionInfoSize))
+		{
+			//ErrorExit((LPTSTR)L"VerQueryValue");
+			delete[]   VersionInfoPtr;
+			return NULL;
+		}
+		if (wcslen(InformationPtr)> 0)   //Not   Null 
+		{
+			AppVersion = CString(InformationPtr);
+		}
+
+		delete[]   VersionInfoPtr;
+	}
+	return   AppVersion;
+}
+BOOL CAboutDlg::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	// TODO:  在此添加额外的初始化
+	CString ver = GetAppVersion(L"Login.exe");
+	if (ver.IsEmpty()) return FALSE;
+
+	int pos = ver.ReverseFind('.');
+	CString mainVer = ver.Left(pos);
+	CString build = ver.Right(ver.GetLength() - pos - 1);
+	GetDlgItem(IDC_STATIC_VER)->SetWindowText(mainVer);
+	GetDlgItem(IDC_STATIC_BUILD)->SetWindowText(build);
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// 异常:  OCX 属性页应返回 FALSE
+}
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
@@ -76,6 +146,8 @@ BEGIN_MESSAGE_MAP(CLoginDlg, CDialogEx)
 	ON_COMMAND(ID_32774, &CLoginDlg::OnMenuAbout)
 	ON_COMMAND(ID_32771, &CLoginDlg::OnMenuRefresh)
 	ON_COMMAND(ID_32772, &CLoginDlg::OnMenuExit)
+	ON_COMMAND(ID_32775, &CLoginDlg::OnOnlineSupport)
+	ON_COMMAND(ID_32776, &CLoginDlg::OnMenuCheckUpdate)
 END_MESSAGE_MAP()
 
 
@@ -271,12 +343,12 @@ void CLoginDlg::OnRefresh()
 		else if ((*cur).ConnectStatus == _T("对不起，您的用户状态不正确，您现在的状态是：[欠费]，请与管理员联系！"))
 			TempStr = _T("×");
 		else if ((*cur).ConnectStatus == _T("密码错误"))
-			TempStr = _T("Error[1]");
+			TempStr = _T("Error 1");
 		else
 			TempStr = _T("");
 		List.SetItemText(tmp, 1, TempStr);
 
-		if (TempStr != _T("Error[1]"))
+		if (TempStr != _T("Error 1"))
 		{
 			TempStr.Format(_T("%.3lf"), (*cur).AccountBalance);
 			TempStr.AppendFormat(_T("元"));
@@ -312,6 +384,53 @@ void CLoginDlg::OnRefresh()
 }
 
 
+void CLoginDlg::OnCheckUpdate()
+{
+	//获取当前文件的版本信息
+	CAboutDlg Dlg;
+	CString ver = Dlg.GetAppVersion(_T("Login.exe"));
+	if (ver.IsEmpty()) return;
+
+	int pos = ver.ReverseFind('.');
+	CString mainVer = ver.Left(pos);
+	CString build = ver.Right(ver.GetLength() - pos - 1);
+
+	//获取最新更新信息
+	CString cache = _T(""); 
+	CInternetSession  session;
+	CHttpFile* pf;
+
+	CString Url = _T("http://ihamsterball.github.io/Login/LatestVersion.info");
+	pf = (CHttpFile*)session.OpenURL(Url);
+
+	char str[1024];
+	while (pf->ReadString((LPTSTR)str, 1024))   //读取网页数据 
+	{
+		cache += str;
+	}
+	pos = cache.ReverseFind('.');
+	CString latestVer = cache.Left(pos);
+	CString latestbuild = cache.Mid(pos + 1, cache.GetLength() - pos - 2);
+
+	//如果检查到新版本
+	if (latestVer != mainVer || latestVer == mainVer&&build < latestbuild)
+	{
+		//弹出消息框并获取用户操作
+		int ret;
+		ret = MessageBox(_T("发现新版本，是否下载？"), _T("提示"), MB_YESNO | MB_ICONASTERISK | MB_TASKMODAL);
+		switch (ret)
+		{
+		case IDYES:
+			ShellExecute(NULL, _T("open"), _T("http://ihamsterball.github.io/Login/LatestVersion/Login.exe"), NULL, NULL, SW_SHOWNORMAL);
+			break;
+		case IDNO:
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 
 void CLoginDlg::OnAbout()
 {
@@ -334,4 +453,12 @@ void CLoginDlg::OnMenuRefresh()
 void CLoginDlg::OnMenuExit()
 {
 	OnOK();
+}
+void CLoginDlg::OnOnlineSupport()
+{
+	ShellExecute(NULL, _T("open"), _T("http://ihamsterball.github.io/Login"), NULL, NULL, SW_SHOWNORMAL);
+}
+void CLoginDlg::OnMenuCheckUpdate()
+{
+	OnCheckUpdate();
 }

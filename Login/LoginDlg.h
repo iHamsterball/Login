@@ -31,6 +31,7 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	void OnCheckUpdate();
 	afx_msg void OnRefresh();
 	CListCtrl List;
 	afx_msg void OnAbout();
@@ -38,5 +39,7 @@ public:
 	afx_msg void OnMenuAbout();
 	afx_msg void OnMenuRefresh();
 	afx_msg void OnMenuExit();
+	afx_msg void OnOnlineSupport();
+	afx_msg void OnMenuCheckUpdate();
 };
 
