@@ -41,5 +41,6 @@ public:
 	afx_msg void OnMenuExit();
 	afx_msg void OnOnlineSupport();
 	afx_msg void OnMenuCheckUpdate();
+	afx_msg void OnUpdateHistory();
 };
 

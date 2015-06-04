@@ -148,6 +148,7 @@ BEGIN_MESSAGE_MAP(CLoginDlg, CDialogEx)
 	ON_COMMAND(ID_32772, &CLoginDlg::OnMenuExit)
 	ON_COMMAND(ID_32775, &CLoginDlg::OnOnlineSupport)
 	ON_COMMAND(ID_32776, &CLoginDlg::OnMenuCheckUpdate)
+	ON_COMMAND(ID_32777, &CLoginDlg::OnUpdateHistory)
 END_MESSAGE_MAP()
 
 
@@ -461,4 +462,8 @@ void CLoginDlg::OnOnlineSupport()
 void CLoginDlg::OnMenuCheckUpdate()
 {
 	OnCheckUpdate();
+}
+void CLoginDlg::OnUpdateHistory()
+{
+	ShellExecute(NULL, _T("open"), _T("http://ihamsterball.github.io/Login/index.html#UpdateHistory"), NULL, NULL, SW_SHOWNORMAL);
 }
