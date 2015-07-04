@@ -4,6 +4,9 @@
 
 #pragma once
 #include "afxcmn.h"
+#include "tchart2.h"
+#include "ATLComTime.h"
+#include "afxwin.h"
 
 
 // CLoginDlg ¶Ô»°¿ò
@@ -42,5 +45,12 @@ public:
 	afx_msg void OnOnlineSupport();
 	afx_msg void OnMenuCheckUpdate();
 	afx_msg void OnUpdateHistory();
+	CTchart2 TrafficChart;
+	COleDateTime from_time;
+	COleDateTime to_time;
+	DWORD ipaddr;
+	CComboBox m_Username;
+	afx_msg void OnShowTrafficLog();
+	CIPAddressCtrl m_IP;
 };
 

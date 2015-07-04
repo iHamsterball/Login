@@ -126,6 +126,9 @@ std::vector<LoginNetConnect>::iterator cur;
 
 CLoginDlg::CLoginDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CLoginDlg::IDD, pParent)
+	, from_time(COleDateTime::GetCurrentTime())
+	, to_time(COleDateTime::GetCurrentTime())
+	, ipaddr(0)
 {
 	EnableActiveAccessibility();
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
@@ -135,6 +138,12 @@ void CLoginDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LIST1, List);
+	DDX_Control(pDX, IDC_TCHART2, TrafficChart);
+	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER1, from_time);
+	DDX_DateTimeCtrl(pDX, IDC_DATETIMEPICKER2, to_time);
+	DDX_IPAddress(pDX, IDC_IPADDRESS1, ipaddr);
+	DDX_Control(pDX, IDC_COMBO1, m_Username);
+	DDX_Control(pDX, IDC_IPADDRESS1, m_IP);
 }
 
 BEGIN_MESSAGE_MAP(CLoginDlg, CDialogEx)
@@ -149,6 +158,7 @@ BEGIN_MESSAGE_MAP(CLoginDlg, CDialogEx)
 	ON_COMMAND(ID_32775, &CLoginDlg::OnOnlineSupport)
 	ON_COMMAND(ID_32776, &CLoginDlg::OnMenuCheckUpdate)
 	ON_COMMAND(ID_32777, &CLoginDlg::OnUpdateHistory)
+	ON_BN_CLICKED(IDC_BUTTON3, &CLoginDlg::OnShowTrafficLog)
 END_MESSAGE_MAP()
 
 
@@ -262,6 +272,13 @@ BOOL CLoginDlg::OnInitDialog()
 	//需要考虑网络连接数已满的情况
 	for (cur = vec.begin(); cur != vec.end(); cur++)
 	{
+		//初始化列表框控件
+		((CComboBox*)GetDlgItem(IDC_COMBO1))->AddString((CString)(*cur).Account);
+
+		//初始化IP地址
+		m_IP.SetWindowText((CString)(*cur).IP); // 把IP地址(CString类型)直接显示到IP Address控件中
+		UpdateData(true);
+
 		if ((*cur).BasicDataBalance > 0)
 			(*cur).OnBjfuLogin((*cur).Account, (*cur).Password, (*cur).IP, (CStringA)"connect");
 		if (!((*cur).ConnectStatus == _T("用户已在本主机上登录，不需要重新登录")
@@ -271,6 +288,7 @@ BOOL CLoginDlg::OnInitDialog()
 			break;
 	}
 	OnRefresh();
+
 
 	//检查更新
 	OnCheckUpdate(0);//参数0代表如果未检查到更新不弹框提示
@@ -480,4 +498,72 @@ void CLoginDlg::OnMenuCheckUpdate()
 void CLoginDlg::OnUpdateHistory()
 {
 	ShellExecute(NULL, _T("open"), _T("http://ihamsterball.github.io/Login/index.html#UpdateHistory"), NULL, NULL, SW_SHOWNORMAL);
+}
+
+
+void CLoginDlg::OnShowTrafficLog()
+{
+	// 获取流量日志
+	CString SelectUser;
+	((CComboBox*)GetDlgItem(IDC_COMBO1))->GetWindowText(SelectUser);
+	
+	if (SelectUser != _T("") && ipaddr != 0)
+	{
+		//获取IP地址
+		UpdateData(true);
+		unsigned char *pIP = (unsigned char*)&ipaddr;
+		CString IPAddress;
+		IPAddress.Format(_T("%u.%u.%u.%u"), *(pIP + 3), *(pIP + 2), *(pIP + 1), *pIP);
+
+		for (cur = vec.begin(); cur != vec.end(); cur++)
+		{
+			if (SelectUser == (CString)(*cur).Account)
+			{
+				(*cur).OnGatherTrafficLog(from_time.Format(_T("%Y-%m-%d")), to_time.Format(_T("%Y-%m-%d")), IPAddress);
+				break;
+			}
+		}
+		if ((*cur).records)
+		{
+			for (int k = 0; k <= 1; k++)
+			{
+				COleSafeArray XValues;
+				COleSafeArray YValues;
+				DWORD numElements[] = { (*cur).records };
+				// 创建安全数组   
+				XValues.Create(VT_R8, 1, numElements);
+				YValues.Create(VT_R8, 1, numElements);
+				// 初始化 
+				(*cur).cur = (*cur).vec.begin();
+				for (long i = 0; i < (*cur).records; i++, (*cur).cur++)
+				{
+					XValues.PutElement(&i, &i);
+					YValues.PutElement(&i, k ? &(*(*cur).cur).second : &(*(*cur).cur).first);
+				}
+				CSeries lineSeries = (CSeries)TrafficChart.Series(k);
+				lineSeries.Clear();
+				lineSeries.AddArray((*cur).records, YValues, XValues);
+
+				//绘制回显
+				CString output;
+				output.Format(_T("已绘制%d个记录"), (*cur).records);
+				SetDlgItemTextW(IDC_DRAW_INFO, output);
+			}
+		}
+		else
+		{
+			CSeries lineSeries;
+			lineSeries = (CSeries)TrafficChart.Series(0);
+			lineSeries.Clear();
+			lineSeries = (CSeries)TrafficChart.Series(1);
+			lineSeries.Clear();
+
+			//绘制回显
+			CString output = _T("");
+			SetDlgItemTextW(IDC_DRAW_INFO, output);
+			MessageBox(_T("暂无数据"), _T("提示"), MB_ICONINFORMATION);
+		}
+	}
+	else
+		MessageBox(_T("请选择必要信息"), _T("提示"));
 }

@@ -36,6 +36,24 @@
     <ClInclude Include="LoginNetConnect.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CTChart.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CSeries.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="tchart2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CAxes.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CAxis.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CLegend.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Login.cpp">
@@ -48,6 +66,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="LoginNetConnect.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="tchart2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -194,3 +194,120 @@ void LoginNetConnect::DataGather(double &data, CString keyword, CString StartStr
 	end = cache.Find(EndStr);
 	data = _ttof(cache.Mid(start + 8, end - start - 8));
 }
+void LoginNetConnect::OnGatherTrafficLog(CString from_time, CString to_time, CString IPAddress)//获取流量日志
+{
+	//如果确认密码不正确，则不允许查询
+	if (ConnectStatus == _T("密码错误"))
+	{
+		MessageBox(0, _T("用户名或密码错误"), _T("注意"), MB_ICONINFORMATION);
+		return;
+	}
+
+	CInternetSession  session;
+	CHttpConnection* pServer;
+	CHttpFile* pf;
+
+	CString ServerName = _T("202.204.122.1");
+	INTERNET_PORT nPort = 80;  //port
+	pServer = session.GetHttpConnection(ServerName, nPort);
+	pf = pServer->OpenRequest(CHttpConnection::HTTP_VERB_GET, _T("/"));
+
+	CString CookieData;
+	//获取Cookie
+	session.GetCookie(_T("http://202.204.122.1/checkLogin.jsp"), _T("JSESSIONID"), CookieData);
+	int err = GetLastError();
+	//设置Cookie
+	session.SetCookie(_T("http://202.204.122.1"), _T(""), CookieData);
+
+	// 登陆
+	CStringA data = "username=" + Account + "&password=" + Password + "&ip=" + IP + "&action=admin";
+	Request(pServer, pf, data,
+		_T("POST"),
+		_T("/checkLogin.jsp"),
+		_T("http://202.204.122.1/index.jsp"),
+		_T("202.204.122.1"));
+
+	data = "from_time=" + (CStringA)from_time + "&to_time=" + (CStringA)to_time + "&ipaddr=" + (CStringA)IPAddress + "&userid=";
+	data.AppendFormat("%d", userid);
+	Request(pServer,pf,data,
+		_T("POST"),
+		_T("/user/traffic/user_trafficlog_query.jsp"),
+		_T("http://202.204.122.1/user/traffic/user_trafficlog_query.jsp"),
+		_T("202.204.122.1"));
+	{
+		int start = cache.Find(_T("共<font color='#4a6dbf'>["));
+		int end = cache.Find(_T("]</font>条记录"), start);
+		CString tmp = cache.Mid(start, end - start);
+		tmp = tmp;
+	}
+
+	CString RequestURL;
+	RequestURL = _T("/user/traffic/user_trafficlog_query.jsp?userid=");
+	RequestURL.AppendFormat(_T("%d"), userid);
+	RequestURL += _T("&ipaddr=") + IPAddress;
+	RequestURL += _T("&from_time=") + from_time + _T("&to_time=") + to_time;
+	RequestURL += _T("&page=1");
+	Request(pServer, pf, data,
+		_T("GET"),
+		RequestURL,
+		_T("http://202.204.122.1/user/traffic/user_trafficlog_query.jsp"),
+		_T("202.204.122.1"));
+	{
+		//获取总页数
+		int start = cache.Find(_T("共<font color='#4a6dbf'>["));
+		int end = cache.Find(_T("]</font>条记录"), start);
+		CString tmp = cache.Mid(start + 24, end - start - 24);
+		records = _ttoi(tmp);
+		pages = records / 10 + ((records % 10) ? (records % 10) : 0);
+
+		//存储数据
+		SaveData();
+	}
+
+	for (int page = 2; page <= pages; page++)
+	{
+		CString RequestURL;
+		RequestURL = _T("/user/traffic/user_trafficlog_query.jsp?userid=");
+		RequestURL.AppendFormat(_T("%d"), userid);
+		RequestURL += _T("&ipaddr=") + IPAddress;
+		RequestURL += _T("&from_time=") + from_time + _T("&to_time=") + to_time;
+		RequestURL += _T("&page=");
+		RequestURL.AppendFormat(_T("%d"), page);
+		Request(pServer, pf, data,
+			_T("GET"),
+			RequestURL,
+			_T("http://202.204.122.1/user/traffic/user_trafficlog_query.jsp"),
+			_T("202.204.122.1"));
+		{
+			//存储数据
+			SaveData();
+		}
+	}
+}
+void LoginNetConnect::SaveData()
+{
+	//抛弃开头
+	int start = cache.Find(_T("<td align=\"center\" width=\"10%\" class=\"form_td_middle\" nowrap=\"nowrap\">出流量(KB)</td>"));
+	cache = cache.Right(cache.GetLength() - start);
+	start = 0;
+	//处理数据
+	while (true)
+	{
+		for (int i = 1; i <= 6; i++)
+		{
+			start = cache.Find(_T("<td align=\"center\" class=\"form_td_middle\""), start + 1);
+			if (start == -1)
+				break;
+		}
+		if (start == -1)
+			break;
+		start = cache.Find(_T("<td align=\"center\" class=\"form_td_middle\""), start + 1);
+		
+		int end = cache.Find(_T("</td>"), start + 1);
+		double Download = _ttof(cache.Mid(start + 42, end - start - 42));
+		start = cache.Find(_T("<td align=\"center\" class=\"form_td_middle\""), start + 1);
+		end = cache.Find(_T("</td>"), start + 1);
+		double Upload = _ttof(cache.Mid(start + 42, end - start - 42));
+		vec.push_back(std::make_pair(Download, Upload));
+	}
+}

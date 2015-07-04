@@ -8,11 +8,12 @@ private:
 public:
 	//接口
 	void OnBjfuLogin(
-		CStringA &username, // username
-		CStringA &password, //password
-		CStringA &ip, //ip
-		CStringA &action //action
+		CStringA &username, // 用户名
+		CStringA &password, // 密码
+		CStringA &ip, // IP
+		CStringA &action // 操作
 		);//TODO: 里面的那个长函数有时间必须找个方法重写 -- 已重写
+	void OnGatherTrafficLog(CString from_time, CString to_time, CString IPAddress);//获取流量日志
 
 	inline void Empty(){ Account = ""; Password = ""; }
 
@@ -30,6 +31,12 @@ public:
 	double BasicDataBalance;//剩余基础流量
 	double BasicDataExceed;//超出基础流量
 	double ExceedDataFee;//超流量费用
+
+	int pages;//流量日志页数
+	int records;//总计数
+	std::vector<std::pair<double, double>> vec;//用于存放需要绘制图表的数据
+	std::vector<std::pair<double, double>>::iterator cur;
+	void SaveData();
 
 	//内部网络数据请求函数
 	void Request(CHttpConnection* pServer, CHttpFile* pf, CStringA data,

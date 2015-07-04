@@ -103,12 +103,18 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CAxes.h" />
+    <ClInclude Include="CAxis.h" />
+    <ClInclude Include="CLegend.h" />
+    <ClInclude Include="CSeries.h" />
+    <ClInclude Include="CTChart.h" />
     <ClInclude Include="Login.h" />
     <ClInclude Include="LoginDlg.h" />
     <ClInclude Include="LoginNetConnect.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="tchart2.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Login.cpp" />
@@ -118,6 +124,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="tchart2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Login.rc" />
@@ -133,7 +140,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties RESOURCE_FILE="Login.rc" />
+      <UserProperties RESOURCE_FILE="Login.rc" _x007B_B6C10489-FB89-11D4-93C9-006008A7EED4_x007D_="CTchart2" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>
