@@ -19,6 +19,7 @@ public:
 	//数据
 	CStringA Account;//账号
 	CStringA Password;//密码
+	CStringA IP;//IP（我之前为何没加（╯－＿－）╯╧╧）
 	int userid;//貌似有一个唯一的userid用于后续操作
 
 	CString ConnectStatus;//连接状态
@@ -31,9 +32,8 @@ public:
 	double ExceedDataFee;//超流量费用
 
 	//内部网络数据请求函数
-	void Request(CHttpConnection* pServer, CHttpFile* pf,
-		CString Method, CString RequestPath, CString Referer, CString Host,
-		CStringA data);
+	void Request(CHttpConnection* pServer, CHttpFile* pf, CStringA data,
+		CString Method, CString RequestPath, CString Referer, CString Host);
 
 	//内部数据处理函数
 	void DataGather(CString &data);

@@ -2,9 +2,8 @@
 #include "LoginNetConnect.h"
 
 //网页数据请求函数
-void LoginNetConnect::Request(CHttpConnection* pServer, CHttpFile* pf,
-	CString Method, CString RequestPath, CString Referer, CString Host,
-	CStringA data)
+void LoginNetConnect::Request(CHttpConnection* pServer, CHttpFile* pf, CStringA data,
+	CString Method, CString RequestPath, CString Referer, CString Host)
 {
 	//拼接头部
 	pf = pServer->OpenRequest((Method == _T("POST")) ? CHttpConnection::HTTP_VERB_POST : CHttpConnection::HTTP_VERB_GET, RequestPath);
@@ -68,7 +67,7 @@ void LoginNetConnect::OnBjfuLogin(
 
 	CStringA temp = "username=" + username + "&password=" + password + "&ip=" + ip + "&action=" + action;
 
-	Request(pServer, pf, _T("GET"), _T("/"), _T(""), _T(""), temp);
+	Request(pServer, pf, temp, _T("GET"), _T("/"), _T(""), _T(""));
 	//Package -1
 	//读取IP地址
 	{
@@ -79,11 +78,11 @@ void LoginNetConnect::OnBjfuLogin(
 		end = cache.Find(_T("\">"));
 		ip = cache.Mid(start + 1, end - start - 1);
 	}
-
+	IP = ip;
 	CString CookieData;
 	//获取Cookie
 	session.GetCookie(_T("http://202.204.122.1/checkLogin.jsp"), _T("JSESSIONID"), CookieData);
-	int tmp = GetLastError();
+	int err = GetLastError();
 	//设置Cookie
 	session.SetCookie(_T("http://202.204.122.1"), _T(""), CookieData);
 	
@@ -93,15 +92,23 @@ void LoginNetConnect::OnBjfuLogin(
 	//Login to system
 	CStringA data = "username=" + username + "&password=" + password + "&ip=" + ip + "&action=" + action;
 
-	Request(pServer, pf, 
+	Request(pServer, pf, data, 
 		_T("POST"), 
 		_T("/checkLogin.jsp"), 
 		_T("http://202.204.122.1/index.jsp"), 
-		_T("202.204.122.1"), data);
+		_T("202.204.122.1"));
 	//检查用户名密码
 	if (cache.Find(_T("用户名或密码不正确")) != -1)
 	{
 		ConnectStatus = _T("密码错误");
+		//关闭HttpFile
+		if (pf != NULL)
+		{
+			pf->Close();
+			delete pf;
+			pf = NULL;
+		}
+		//断开与服务器连接
 		if (pServer != NULL)
 		{
 			pServer->Close();
@@ -115,26 +122,31 @@ void LoginNetConnect::OnBjfuLogin(
 	//通过cache中的src确定下一个数据包请求的地址
 	//不同用户，userid不同
 	//GET /user/index.jsp?ip="IP Address"&action=connect -package 3
-	Request(pServer, pf,
+	Request(pServer, pf, data,
 		_T("GET"),
 		_T("/user/index.jsp?ip=") + (CString)ip + _T("&action=") + ((action == "disconnect") ? _T("disconnect") : _T("connect")),
 		_T("http://202.204.122.1/index.jsp"),
-		_T("202.204.122.1"), data);
+		_T("202.204.122.1"));
 	CString RequestURL;
 	{
 		int start, end;
 		start = cache.Find(_T("</frameset>"));
 		end = cache.Find(_T("\""), start + 31);
 		RequestURL = cache.Mid(start + 31, end - start - 31);
+		start = cache.Find(_T("userid="));
+		end = cache.Find(_T("&ip"), start);
+		userid = _ttoi(cache.Mid(start + 7, end - start - 7));
+
 		//MessageBox(cache, _T("网页信息"), 0);
 	}
 
 	//GET /user/+RequestURL -package 4
 	//收集需要的信息
-	Request(pServer, pf, _T("GET"),
+	Request(pServer, pf, data,
+		_T("GET"),
 		_T("/user/") + RequestURL,
 		_T("http://202.204.122.1/user/index.jsp?ip=") + (CString)ip + _T("&action") + ((action == "disconnect") ? _T("disconnect") : _T("connect")),
-		_T("202.204.122.1"), data);
+		_T("202.204.122.1"));
 	if (action != "disconnect")
 	{
 		//处理cache以获取需要的信息
@@ -148,6 +160,13 @@ void LoginNetConnect::OnBjfuLogin(
 		DataGather(ExceedDataFee, _T("超流量费用"), _T("FF0000"), _T("</font>"));//超流量费用
 	}
 
+	//关闭HttpFile
+	if (pf != NULL)
+	{
+		pf->Close();
+		delete pf;
+		pf = NULL;
+	}
 	//断开与服务器的连接
 	if (pServer != NULL)
 	{

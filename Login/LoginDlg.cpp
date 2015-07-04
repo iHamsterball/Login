@@ -256,14 +256,14 @@ BOOL CLoginDlg::OnInitDialog()
 		if ((*cur).ConnectStatus == _T("用户已在本主机上登录，不需要重新登录")
 			|| (*cur).ConnectStatus == _T("联网成功"))
 		{
-			(*cur).OnBjfuLogin((*cur).Account, (*cur).Password, (CStringA)"118.228.171.91", (CStringA)"disconnect");
+			(*cur).OnBjfuLogin((*cur).Account, (*cur).Password, (*cur).IP, (CStringA)"disconnect");
 			break;
 		}
 	//需要考虑网络连接数已满的情况
 	for (cur = vec.begin(); cur != vec.end(); cur++)
 	{
 		if ((*cur).BasicDataBalance > 0)
-			(*cur).OnBjfuLogin((*cur).Account, (*cur).Password, (CStringA)"118.228.171.91", (CStringA)"connect");
+			(*cur).OnBjfuLogin((*cur).Account, (*cur).Password, (*cur).IP, (CStringA)"connect");
 		if (!((*cur).ConnectStatus == _T("用户已在本主机上登录，不需要重新登录")
 			|| (*cur).ConnectStatus == _T("联网成功")))
 			continue;
@@ -417,7 +417,7 @@ void CLoginDlg::OnCheckUpdate(int option)
 	CString latestbuild = cache.Mid(pos + 1, cache.GetLength() - pos - 2);
 
 	//如果检查到新版本
-	if (latestVer > mainVer || latestVer == mainVer&&build < latestbuild)
+	if (latestVer > mainVer || latestVer == mainVer && _ttoi(build) < _ttoi(latestbuild))
 	{
 		//弹出消息框并获取用户操作
 		int ret;
@@ -436,6 +436,14 @@ void CLoginDlg::OnCheckUpdate(int option)
 	else
 		if (option)//软件启动时的检查不应弹出此对话框 -- 手动点击检查更新按钮需要弹出
 			MessageBox(_T("暂未发现更新"), _T("提示"), MB_OK | MB_ICONASTERISK);
+	//关闭HttpFile
+	if (pf != NULL)
+	{
+		pf->Close();
+		delete pf;
+		pf = NULL;
+	}
+	session.Close();
 }
 
 
